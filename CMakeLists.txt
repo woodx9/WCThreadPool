@@ -18,5 +18,6 @@ target_include_directories(${PROJECT_NAME}
         ${PROJECT_SOURCE_DIR}/include
 )#设置这个可执行文件hello_headers需要包含的库的路径
 
+#使用线程库必须要带上这个
 find_package(Threads REQUIRED) 
 target_link_libraries(${PROJECT_NAME} Threads::Threads)
