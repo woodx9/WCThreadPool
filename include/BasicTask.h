@@ -7,7 +7,7 @@ class BasicTask {
 public:
     BasicTask();
 
-    //使用了设计模式：魔板方法
+    //使用了设计模式：模板方法
     void run();
 
     virtual void task() = 0;
