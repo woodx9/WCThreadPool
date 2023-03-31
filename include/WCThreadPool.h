@@ -14,6 +14,8 @@
 class WCThreadPool {
 public:
      WCThreadPool(int );
+     WCThreadPool(const WCThreadPool &) = delete;
+     WCThreadPool & operator=(const WCThreadPool &) = delete;
      ~WCThreadPool();
 
      //将任务提交到这里

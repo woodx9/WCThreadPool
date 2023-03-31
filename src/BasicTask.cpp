@@ -1,7 +1,5 @@
 #include "../include/BasicTask.h"
 
-
-
 BasicTask::BasicTask() {
     fstatus = false;
 }

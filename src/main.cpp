@@ -2,14 +2,14 @@
 #include "../include/BasicTask.h"
 using namespace std;
 
-class B : public BasicTask {
+class MyTask : public BasicTask {
 public:
-    B(int t_num) : num(t_num) {
+    MyTask(int t_num) : num(t_num) {
         result = -1;
     }
 
     //在这里写需要实现的功能
-    virtual void task() {
+    void task() override{
         result = num + 1;   
     }
 
@@ -18,7 +18,7 @@ public:
         return result;   
     }
 
-    virtual ~B() {
+    virtual ~MyTask() {
 
     }
 
@@ -35,14 +35,15 @@ int main() {
     int i = 0;
     vector<BasicTask *> vb;
     while (i < 20) {
-        BasicTask * bt = new B(i++);
+        BasicTask * bt = new MyTask(i++);
         tp.submit(bt);
         vb.push_back(bt);
     }
 
     for (int i = 0; i < 20; ++i) {
-        B * b = (B *)vb[i];
-        cout << (b)->get_result() << endl;
+        MyTask * mt = (MyTask *)vb[i];
+        while (!mt->status()) ;
+            cout << mt->get_result() << endl;
     }
 
     while (1) ;

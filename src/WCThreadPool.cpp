@@ -1,9 +1,6 @@
 #include "../include/WCThreadPool.h"
 using namespace std;
 
-
-
-
 WCThreadPool::WCThreadPool(int t_thread_num): thread_num(t_thread_num){
     thread_pool_id = tasksList.size();
     tasksList.push_back(queue<BasicTask *>() );
@@ -24,9 +21,6 @@ void WCThreadPool::submit(BasicTask * bt) {
     tasksList[thread_pool_id].push(bt);
     cv.notify_one();
 }
-
-
-
 
 
 void WCThreadPool::worker() {
