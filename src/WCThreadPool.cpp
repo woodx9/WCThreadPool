@@ -1,12 +1,14 @@
 #include "../include/WCThreadPool.h"
 using namespace std;
 
-WCThreadPool::WCThreadPool(int t_thread_num): thread_num(t_thread_num){
-    thread_pool_id = tasksList.size();
-    tasksList.push_back(queue<BasicTask *>() );
+WCThreadPool::WCThreadPool(int t_thread_num, int t_task_queue_num): thread_num(t_thread_num), task_queue_num(t_task_queue_num), tasksList(t_task_queue_num), cvList(t_task_queue_num){
+    all_task_num = 0;
+    
+    for (int i = 0; i < t_task_queue_num; ++i) {
+        mutexsList.push_back(new mutex());
+    }
     
     for(int i = 0; i < thread_num; ++i) {
-        //thread构造函数第一个参数必须定义为全局函数或者类里的静态函数，不过采用std::bind()函数可以直接绑定类成员函数
         thread t(std::bind(&WCThreadPool::worker, this));
         t.detach();
     }
@@ -16,32 +18,50 @@ WCThreadPool::~WCThreadPool() {
     
 }
 
-void WCThreadPool::submit(BasicTask * bt) {
-    lock_guard<mutex> lk(mut);
-    tasksList[thread_pool_id].push(bt);
-    cv.notify_one();
+bool WCThreadPool::submit(BasicTask * bt, int priority) {
+    if (priority < 0 || priority >= task_queue_num) return false;
+
+    lock_guard<mutex> lk(*mutexsList[priority]);
+    tasksList[priority].push(bt);
+    cvList[priority].notify_one();
+
+    //增加任务数量
+    lock_guard<mutex> idle_lk(idle_mutex);
+    all_task_num += 1;
+    return true;
 }
 
 
 void WCThreadPool::worker() {
     while (true) {
-        unique_lock<mutex> lk(mut);
-        bool t_thread_pool_id = thread_pool_id;
-        cv.wait(lk, [t_thread_pool_id](){return !WCThreadPool::tasksList[t_thread_pool_id].empty(); });
+            // int i = 0;
+        for (int i = 0; i < task_queue_num; ++i) {
+            if (!tasksList[i].empty()) {
+                unique_lock<mutex> lk(*mutexsList[i]);
 
-        BasicTask * bt = tasksList[thread_pool_id].front();
-        tasksList[thread_pool_id].pop();
+                cvList[i].wait(lk, [this, i](){return !tasksList[i].empty(); });
 
-        lk.unlock();
+                BasicTask * bt = tasksList[i].front();
+                tasksList[i].pop();
 
-        //工作中
-        (*bt).run();
+                lk.unlock();
+
+                //工作中
+                (*bt).run();
+
+                //重置遍历，从i = 0开始看有没有优先级高的任务需要执行
+                i = -1;
+                //减少任务数量
+                lock_guard<mutex> idle_lk(idle_mutex);
+                all_task_num -= 1;
+            }
+        }
+
+        unique_lock<mutex> idle_lk(idle_mutex);
+        idle_cv.wait(idle_lk, [this](){return all_task_num > 0;});
     }
 }
 
-
-//初始化静态变量
-std::vector<std::queue<BasicTask*> > WCThreadPool::tasksList;
 
 
 

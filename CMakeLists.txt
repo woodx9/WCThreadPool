@@ -7,7 +7,7 @@ SET(CMAKE_CXX_STANDARD 11)
 set(SOURCES
      src/BasicTask.cpp
      src/WCThreadPool.cpp
-     src/main.cpp
+     src/hello_WCThreadPool.cpp
 )#创建一个变量，名字叫SOURCE。它包含了所有的cpp文件。
 
 add_executable(${PROJECT_NAME} ${SOURCES})#用所有的源文件生成一个可执行文件，因为这里定义了SOURCE变量，所以就不需要罗列cpp文件了

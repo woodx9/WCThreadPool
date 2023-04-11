@@ -30,15 +30,16 @@ private:
 
 
 int main() {
-    WCThreadPool tp(10);
-    
+    WCThreadPool tp(1, 10);
     int i = 0;
     vector<BasicTask *> vb;
     while (i < 20) {
         BasicTask * bt = new MyTask(i++);
-        tp.submit(bt);
+        tp.submit(bt, 0);
         vb.push_back(bt);
     }
+
+    
 
     for (int i = 0; i < 20; ++i) {
         MyTask * mt = (MyTask *)vb[i];

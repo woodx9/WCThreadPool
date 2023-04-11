@@ -13,21 +13,27 @@
 #define __WCTHREADPOOL__ 
 class WCThreadPool {
 public:
-     WCThreadPool(int );
+     WCThreadPool(int, int);
      WCThreadPool(const WCThreadPool &) = delete;
      WCThreadPool & operator=(const WCThreadPool &) = delete;
      ~WCThreadPool();
 
      //将任务提交到这里
-     void submit(BasicTask *);
+     //提交成功返回true，提交失败返回false
+     //int参数表示优先级
+     //task queue在tasksList中的下标越小，代表优先级越高
+     bool submit(BasicTask *, int);
 //data
 private:
-    int thread_num, thread_pool_id;
-    std::mutex mut;
-    //因为要给condition_variable中参数，lamda函数中检测，所以要把任务队列设置成静态变量。
-    //为了扩展的便捷性，所以把所有任务队列放在一个vector里面，线程池对象根据自己的thread_num找到对应的自己的任务队列。
-    static std::vector<std::queue<BasicTask *> > tasksList;
-    std::condition_variable cv;
+    int thread_num, task_queue_num, all_task_num;
+    //当没有任务时需要, 悬挂线程, 需要用它们检查all_task_num是否为0
+    std::mutex idle_mutex;
+    std::condition_variable idle_cv;
+
+    std::vector<std::mutex *> mutexsList;
+    //task queue在tasksList中的下标越小，代表优先级越高
+    std::vector<std::queue<BasicTask *> > tasksList;
+    std::vector<std::condition_variable> cvList;
 
 //func
 private:
