@@ -1,5 +1,6 @@
 #include "../include/WCThreadPool.h"
 #include "../include/BasicTask.h"
+#include <unistd.h>
 using namespace std;
 
 class MyTask : public BasicTask {
@@ -10,6 +11,7 @@ public:
 
     //在这里写需要实现的功能
     void task() override{
+        sleep(num);
         result = num + 1;   
     }
 
@@ -30,14 +32,16 @@ private:
 
 
 int main() {
-    WCThreadPool tp(1, 10);
+    WCThreadPool tp(3, 10);
     int i = 0;
     vector<BasicTask *> vb;
+
     while (i < 20) {
         BasicTask * bt = new MyTask(i++);
-        tp.submit(bt, 0);
+        tp.submit(bt, i % 10);
         vb.push_back(bt);
     }
+
 
     
 

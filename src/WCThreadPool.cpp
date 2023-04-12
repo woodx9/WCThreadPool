@@ -15,7 +15,10 @@ WCThreadPool::WCThreadPool(int t_thread_num, int t_task_queue_num): thread_num(t
 }
 
 WCThreadPool::~WCThreadPool() {
-    
+    //删除所有mutex
+    for (int i = 0; i < task_queue_num; ++i) {
+        delete mutexsList[i];
+    }
 }
 
 bool WCThreadPool::submit(BasicTask * bt, int priority) {
@@ -23,42 +26,39 @@ bool WCThreadPool::submit(BasicTask * bt, int priority) {
 
     lock_guard<mutex> lk(*mutexsList[priority]);
     tasksList[priority].push(bt);
-    cvList[priority].notify_one();
 
     //增加任务数量
     lock_guard<mutex> idle_lk(idle_mutex);
     all_task_num += 1;
+    idle_cv.notify_one();
     return true;
 }
 
 
 void WCThreadPool::worker() {
     while (true) {
-            // int i = 0;
+        unique_lock<mutex> idle_lk(idle_mutex);
+        idle_cv.wait(idle_lk, [this](){return all_task_num > 0;});
+        idle_lk.unlock();
         for (int i = 0; i < task_queue_num; ++i) {
+            unique_lock<mutex> lk(*mutexsList[i]);
             if (!tasksList[i].empty()) {
-                unique_lock<mutex> lk(*mutexsList[i]);
-
-                cvList[i].wait(lk, [this, i](){return !tasksList[i].empty(); });
 
                 BasicTask * bt = tasksList[i].front();
                 tasksList[i].pop();
 
                 lk.unlock();
-
-                //工作中
+                //执行线程需要的任务
                 (*bt).run();
 
                 //重置遍历，从i = 0开始看有没有优先级高的任务需要执行
                 i = -1;
+                
                 //减少任务数量
-                lock_guard<mutex> idle_lk(idle_mutex);
+                lock_guard<mutex> idle_lk_inside(idle_mutex);
                 all_task_num -= 1;
             }
         }
-
-        unique_lock<mutex> idle_lk(idle_mutex);
-        idle_cv.wait(idle_lk, [this](){return all_task_num > 0;});
     }
 }
 
